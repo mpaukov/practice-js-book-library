@@ -39,6 +39,8 @@ const books = [
 	},
 ];
 
+localStorage.setItem("books", JSON.stringify(books))
+
 const divRoot = document.getElementById('root');
 
 const leftDiv = document.createElement('div');
@@ -60,6 +62,7 @@ leftDiv.append(titleDiv, ulDiv, btnDiv);
 btnDiv.addEventListener('click', addBook)
 
 function renderList() {
+	const books = JSON.parse(localStorage.getItem('books'));
 	const markup = books.map(({ title, id }) => `<li id='${id}'><p class="title">${title}</p><button  class="delete">Delete</button><button  class="edit">Edit</button></li>`).join('');
 	ulDiv.insertAdjacentHTML('afterbegin', markup);
 	const linkTitle = document.querySelectorAll('.title');
@@ -73,11 +76,12 @@ function renderList() {
 
 renderList()
 
-function createPreviewMarkup({title, author, img, plot}) {
-	return `<h2>${title}</h2><p>${author}</p><img src='${img}'><p>${plot}</p>`;
+function createPreviewMarkup({id, title, author, img, plot}) {
+	return `<div class='preview' id='${id}'><h2>${title}</h2><p>${author}</p><img src='${img}'><p>${plot}</p></div>`;
 }
 
 function renderPreview(event) {
+	const books = JSON.parse(localStorage.getItem('books'));
 	const book = books.find(book => book.title === event.target.textContent);
 
 	const markup = createPreviewMarkup(book);
@@ -87,46 +91,94 @@ function renderPreview(event) {
 
 function deleteBook(even) {
 	const constId = even.target.parentNode.id;
+	const books = JSON.parse(localStorage.getItem('books'));
+	const newBooks = books.filter(book => book.id !== constId);
+	localStorage.setItem("books", JSON.stringify(newBooks));
+	ulDiv.innerHTML = '';
+	const rightDiv2 = document.querySelector('.preview');
+	if (rightDiv2) {
+		if (constId === rightDiv2.id) { console.log(constId); }
+		console.log(constId);
+	}
+	renderList();
 }
 
-function editBook() {
-	console.log('edit');
+function editBook(event) {
+		const constId = event.target.parentNode.id;
+	const books = JSON.parse(localStorage.getItem('books'));
+	const changeBook = books.find((book) => book.id === constId);
+	const markup = renderForm(changeBook)
+		rightDiv.innerHTML = '';
+	rightDiv.insertAdjacentHTML('afterbegin', markup);
+	fillBook(changeBook);
+	const save = document.querySelector('#save');
+	save.addEventListener('click', saveClick);
+	function saveClick() {
+		const index = books.indexOf(changeBook);
+		books[index] = changeBook
+		localStorage.setItem("books", JSON.stringify(books));
+			ulDiv.innerHTML = '';
+		renderList();
+		const markup = createPreviewMarkup(changeBook);
+		rightDiv.innerHTML = '';
+	rightDiv.insertAdjacentHTML('afterbegin', markup);
+	}
 }
 
-function renderForm() {
+function renderForm({title, author, img, plot}) {
 	const elementForm = `<form>
     <label>
     Title
-    <input type="text" name="title" required minlength="6" />
+    <input value="${title}" type="text" name="title" required/>
   </label>
 	<label>
     Author
-    <input type="text" name="author" required />
+    <input value="${author}" type="text" name="author" required/>
   </label>
 <label>
     Img
-    <input type="text" name="img" required minlength="6" />
+    <input value="${img}" type="text" name="img" required/>
   </label>
 	<label>
     Plot
-    <input type="text" name="plot" required minlength="6" />
+    <input value="${plot}" type="text" name="plot" required/>
   </label>
-  <button type="submit">Save</button>
+  <button id='save' type="button">Save</button>
 </form>`
 	return elementForm;
 }
 
 function addBook() {
-	const markup = renderForm()
-	rightDiv.innerHTML = '';
-	rightDiv.insertAdjacentHTML('afterbegin', markup);
-	const newBook = {
+		const newBook = {
 		title: '',
 		author: '',
 		img: '',
 		plot: '',
 		id: `${Date.now()}`,
 	};
+	const markup = renderForm(newBook)
+		rightDiv.innerHTML = '';
+	rightDiv.insertAdjacentHTML('afterbegin', markup);
+	fillBook(newBook);
+	const save = document.querySelector('#save');
+	save.addEventListener('click', saveClick);
+	function saveClick() {
+		const books = JSON.parse(localStorage.getItem('books'));
+		books.push(newBook);
+		localStorage.setItem("books", JSON.stringify(books));
+			ulDiv.innerHTML = '';
+		renderList();
+		const markup = createPreviewMarkup(newBook);
+		rightDiv.innerHTML = '';
+	rightDiv.insertAdjacentHTML('afterbegin', markup);
+	}
 }
 
-renderForm()
+function fillBook(book) {
+	const inputs = document.querySelectorAll('input');
+	inputs.forEach(input => input.addEventListener('change', inputChange));
+	function inputChange(event) {
+		book[event.target.name] = event.target.value;
+	};
+}
+
